@@ -1,0 +1,27 @@
+name: 'bugroup-checks'
+description: 'Aggregate several checks to a single one'
+inputs:
+  checks:
+    description: 'A new-line separated list of wilcard expressions matching the names of the checks to aggregate'
+    required: true
+  self:
+    description: 'The name of the job that runs this action'
+    default: ''
+    required: false
+  requiredStatus:
+    description: 'A new-line separated list of check status for which the aggregated check should be marked as successful'
+    required: false
+    default: |-
+      skipped
+      success
+  githubToken:
+    description: 'Github token of the repository (automatically created by Github)'
+    default: ${{ github.token }}
+    required: false
+  ref:
+    description: 'The ref to check'
+    default: ${{ github.event.pull_request.head.sha }}
+    required: false
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
