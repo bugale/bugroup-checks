@@ -1,0 +1,20 @@
+env:
+  node: true
+  es6: true
+extends:
+  - standard-with-typescript
+  - plugin:github/recommended
+overrides:
+  - files: ['*.js', '*.jsx', '*.ts', '*.tsx']
+ignorePatterns:
+  - '**/dist/*'
+parserOptions:
+  ecmaVersion: latest
+  sourceType: module
+  project:
+    - './tsconfig.json'
+rules:
+  'i18n-text/no-en': 'off'
+  '@typescript-eslint/space-before-function-paren': 'off'
+  'generator-star-spacing': 'off'
+  'prettier/prettier': ['error', { 'endOfLine': 'auto' }]
