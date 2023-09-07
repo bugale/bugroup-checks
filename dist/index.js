@@ -9829,6 +9829,7 @@ async function setStatus(octokit, status, selfId, allSummaries) {
 async function run() {
     try {
         const checkRegexes = (0, core_1.getMultilineInput)('checks').map((check) => RegExp(`^${check}$`));
+        const excludedCheckRegexes = (0, core_1.getMultilineInput)('excludedChecks').map((check) => RegExp(`^${check}$`));
         const self = (0, core_1.getInput)('self');
         const requiredStatus = (0, core_1.getMultilineInput)('requiredStatus');
         const githubToken = (0, core_1.getInput)('githubToken');
@@ -9850,8 +9851,8 @@ async function run() {
                 }
                 (0, core_1.debug)(`selfId: ${selfId}`);
             }
-            const requiredChecks = refChecks.check_runs.filter((check) => checkRegexes.some((regex) => regex.test(check.name)) && check.id !== selfId);
-            (0, core_1.debug)(`requiredChecks by ${JSON.stringify(checkRegexes)}: ${JSON.stringify(requiredChecks)}`);
+            const requiredChecks = refChecks.check_runs.filter((check) => checkRegexes.some((regex) => regex.test(check.name)) && !excludedCheckRegexes.some((regex) => regex.test(check.name)) && check.id !== selfId);
+            (0, core_1.debug)(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`);
             const allSummaries = requiredChecks.map((check) => check.output.summary ?? '').join('');
             const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed');
             (0, core_1.debug)(`incompleteChecks: ${JSON.stringify(incompleteChecks)}`);
