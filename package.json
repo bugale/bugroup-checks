@@ -1,13 +1,14 @@
 {
   "name": "bugroup-checks",
-  "version": "1.0.0",
+  "version": "0.0.0-development",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bugale/bugroup-checks.git"
+    "url": "https://github.com/bugale/bugroup-checks.git"
   },
   "scripts": {
     "package": "ncc build src/index.ts",
-    "lint": "npx eslint ."
+    "lint": "npx eslint .",
+    "semantic-release": "semantic-release"
   },
   "keywords": [],
   "author": "Bugale Bugalit",
@@ -29,6 +30,8 @@
     "eslint-plugin-prettier": "^5.0.0",
     "prettier": "^3.0.3",
     "prettier-eslint": "^15.0.1",
+    "semantic-release": "^21.1.1",
+    "semantic-release-major-tag": "^0.3.2",
     "typescript": "^5.2.2"
   }
 }
