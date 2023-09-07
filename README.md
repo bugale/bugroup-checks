@@ -29,6 +29,7 @@ jobs:
           checks: |-
             my_check_1
             lint.*
+          self: Grouped Check
 ```
 
 ### Input Parameters
@@ -36,4 +37,11 @@ jobs:
 - `checks`: _(required)_ A new-line separated list of JS-style RegExs matching all sub-checks this action should wait for. They are expected to match the whole
   check name.
 
+- `self`: The name of the check that includes this action. Used to avoid waiting for itself to finish, and to set the description on the check.
+
+- `requiredStatus`: A new-line separated list of statuses which are considered successful. The action will fail if any of the checks in `checks` is not has a
+  status that is not in this list. Defaults to `success,skipped`.
+
 - `githubToken`: A token with which to interact with GitHub. Can be omitted to use the default token.
+
+- `ref`: The git ref to get the checks for. Defaults to the pull request's head ref.
