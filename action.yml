@@ -4,6 +4,10 @@ inputs:
   checks:
     description: 'A new-line separated list of RegExes matching the names of the checks to aggregate'
     required: true
+  excludedChecks:
+    description: 'A new-line separated list of RegExes to exclude from the aggregation'
+    required: false
+    default: ''
   self:
     description: 'The name of the job that runs this action'
     default: ''

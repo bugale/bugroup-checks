@@ -16,6 +16,7 @@ async function setStatus(octokit: ReturnType<typeof getOctokit>, status: string,
 export async function run(): Promise<void> {
   try {
     const checkRegexes = getMultilineInput('checks').map((check) => RegExp(`^${check}$`))
+    const excludedCheckRegexes = getMultilineInput('excludedChecks').map((check) => RegExp(`^${check}$`))
     const self = getInput('self')
     const requiredStatus = getMultilineInput('requiredStatus')
     const githubToken = getInput('githubToken')
@@ -39,8 +40,10 @@ export async function run(): Promise<void> {
         debug(`selfId: ${selfId}`)
       }
 
-      const requiredChecks = refChecks.check_runs.filter((check) => checkRegexes.some((regex) => regex.test(check.name)) && check.id !== selfId)
-      debug(`requiredChecks by ${JSON.stringify(checkRegexes)}: ${JSON.stringify(requiredChecks)}`)
+      const requiredChecks = refChecks.check_runs.filter(
+        (check) => checkRegexes.some((regex) => regex.test(check.name)) && !excludedCheckRegexes.some((regex) => regex.test(check.name)) && check.id !== selfId
+      )
+      debug(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`)
 
       const allSummaries = requiredChecks.map((check) => check.output.summary ?? '').join('')
       const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed')

@@ -37,6 +37,8 @@ jobs:
 - `checks`: _(required)_ A new-line separated list of JS-style RegExs matching all sub-checks this action should wait for. They are expected to match the whole
   check name.
 
+- `excludedChecks`: A new-line separated list of JS-style RegExs matching checks that should be excluded, even if they appear in `checks`.
+
 - `self`: The name of the check that includes this action. Used to avoid waiting for itself to finish, and to set the description on the check.
 
 - `requiredStatus`: A new-line separated list of statuses which are considered successful. The action will fail if any of the checks in `checks` is not has a
