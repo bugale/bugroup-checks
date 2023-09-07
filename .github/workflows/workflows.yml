@@ -1,4 +1,4 @@
-name: Lint
+name: Workflows
 on: [pull_request]
 jobs:
   check-dist:
@@ -76,3 +76,14 @@ jobs:
             ESLint
             markdown.*
           self: All Checks
+  dependabot:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v1
+      - name: Enable auto-merge for Dependabot PRs
+        run: gh pr merge --auto --merge --rebase "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
