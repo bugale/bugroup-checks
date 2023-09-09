@@ -109,3 +109,4 @@ jobs:
         run: gh pr merge --auto --merge --rebase "$PR_URL"
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
+          GH_TOKEN: ${{ github.token }}
