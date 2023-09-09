@@ -1,6 +1,6 @@
-name: Workflows
-on: [pull_request]
-permissions: write-all
+name: Checks
+on:
+  - pull_request
 jobs:
   check-dist:
     name: Check dist/
@@ -64,7 +64,7 @@ jobs:
         if: always()
         with:
           sarif_file: sarif.json
-  group:
+  required:
     name: Required Checks
     runs-on: ubuntu-latest
     steps:
@@ -76,6 +76,7 @@ jobs:
             Check .*
             ESLint
             markdown.*
+          self: Required Checks
   check-commits:
     name: Check Commits
     runs-on: ubuntu-latest
@@ -99,14 +100,3 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Check Commits
         run: commitlint --from ${{ github.event.pull_request.head.sha }}~${{ steps.get-base.outputs.commit-count }} --to ${{ github.event.pull_request.head.sha }}
-  dependabot:
-    runs-on: ubuntu-latest
-    if: ${{ github.actor == 'dependabot[bot]' }}
-    steps:
-      - name: Dependabot metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v1
-      - name: Enable auto-merge for Dependabot PRs
-        run: gh pr merge --auto --rebase "${{github.event.pull_request.html_url}}"
-        env:
-          GH_TOKEN: ${{ github.token }}
