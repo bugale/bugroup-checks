@@ -1,3 +1,4 @@
+---
 name: 'bugroup-checks'
 description: 'Aggregate several checks to a single one'
 inputs:
