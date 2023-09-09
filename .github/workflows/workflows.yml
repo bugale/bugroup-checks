@@ -1,5 +1,6 @@
 name: Workflows
 on: [pull_request]
+permissions: write-all
 jobs:
   check-dist:
     name: Check dist/
@@ -106,7 +107,6 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@v1
       - name: Enable auto-merge for Dependabot PRs
-        run: gh pr merge --auto --merge --rebase "$PR_URL"
+        run: gh pr merge --auto --rebase "${{github.event.pull_request.html_url}}"
         env:
-          PR_URL: ${{github.event.pull_request.html_url}}
           GH_TOKEN: ${{ github.token }}
