@@ -9819,11 +9819,18 @@ async function setStatus(octokit, status, selfId, allSummaries) {
     /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
     (0, core_1.info)(status);
     if (selfId != null) {
-        await octokit.rest.checks.update({
-            ...github_1.context.repo,
-            check_run_id: selfId,
-            output: { summary: allSummaries, title: status }
-        });
+        try {
+            await octokit.rest.checks.update({
+                ...github_1.context.repo,
+                check_run_id: selfId,
+                output: { summary: allSummaries, title: status }
+            });
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                (0, core_1.warning)(`Couldn't update self check: ${error.message}`);
+            }
+        }
     }
 }
 async function run() {
