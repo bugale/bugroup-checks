@@ -5,11 +5,17 @@ async function setStatus(octokit: ReturnType<typeof getOctokit>, status: string,
   /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
   info(status)
   if (selfId != null) {
-    await octokit.rest.checks.update({
-      ...context.repo,
-      check_run_id: selfId,
-      output: { summary: allSummaries, title: status }
-    })
+    try {
+      await octokit.rest.checks.update({
+        ...context.repo,
+        check_run_id: selfId,
+        output: { summary: allSummaries, title: status }
+      })
+    } catch (error) {
+      if (error instanceof Error) {
+        warning(`Couldn't update self check: ${error.message}`)
+      }
+    }
   }
 }
 
