@@ -30849,7 +30849,10 @@ async function run() {
                 }
                 (0, core_1.debug)(`selfId: ${selfId}`);
             }
-            const requiredChecks = refChecks.check_runs.filter((check) => checkRegexes.some((regex) => regex.test(check.name)) && !excludedCheckRegexes.some((regex) => regex.test(check.name)) && check.id !== selfId);
+            const requiredChecks = refChecks.check_runs.filter((check) => checkRegexes.some((regex) => regex.test(check.name)) &&
+                !excludedCheckRegexes.some((regex) => regex.test(check.name)) &&
+                check.id !== selfId &&
+                !refChecks.check_runs.some((otherCheck) => otherCheck.name === check.name && otherCheck.id > check.id));
             (0, core_1.debug)(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`);
             const allSummaries = requiredChecks.map((check) => check.output.summary ?? '').join('');
             const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed');
