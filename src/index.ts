@@ -47,7 +47,11 @@ export async function run(): Promise<void> {
       }
 
       const requiredChecks = refChecks.check_runs.filter(
-        (check) => checkRegexes.some((regex) => regex.test(check.name)) && !excludedCheckRegexes.some((regex) => regex.test(check.name)) && check.id !== selfId
+        (check) =>
+          checkRegexes.some((regex) => regex.test(check.name)) &&
+          !excludedCheckRegexes.some((regex) => regex.test(check.name)) &&
+          check.id !== selfId &&
+          !refChecks.check_runs.some((otherCheck) => otherCheck.name === check.name && otherCheck.id > check.id)
       )
       debug(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`)
 
