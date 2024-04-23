@@ -3,7 +3,7 @@ env:
   node: true
   es6: true
 extends:
-  - standard-with-typescript
+  - love
   - plugin:github/recommended
 overrides:
   - files: ['*.js', '*.jsx', '*.ts', '*.tsx']
