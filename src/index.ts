@@ -26,7 +26,10 @@ export async function run(): Promise<void> {
     const requiredStatus = getMultilineInput('requiredStatus')
     const githubToken = getInput('githubToken')
     const ref = getInput('ref')
+    const delay = parseInt(getInput('delay'), 10)
+    const interval = parseInt(getInput('interval'), 10)
     let selfId: number | undefined | null
+    let noNewJobsCounter = 0
 
     while (true) {
       const octokit = getOctokit(githubToken)
@@ -58,6 +61,12 @@ export async function run(): Promise<void> {
       const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed')
       debug(`incompleteChecks: ${JSON.stringify(incompleteChecks)}`)
       if (incompleteChecks.length === 0) {
+        if (noNewJobsCounter < 1) {
+          debug('No incomplete jobs found, waiting for new jobs to start...')
+          noNewJobsCounter++
+          await new Promise((resolve) => setTimeout(resolve, delay * 1000)) // Wait for new jobs to start
+          continue
+        }
         const unsuccessfulChecks = requiredChecks.filter((check) => !requiredStatus.includes(check.conclusion ?? 'none'))
         debug(`unsuccessfulChecks: ${JSON.stringify(unsuccessfulChecks)}`)
         if (unsuccessfulChecks.length === 0) {
@@ -73,6 +82,7 @@ export async function run(): Promise<void> {
         setFailed(`${unsuccessfulChecks.length}/${requiredChecks.length} checks failed: ${unsuccessfulChecks.map((check) => check.name).join(', ')}`)
         return
       }
+      noNewJobsCounter = 0
 
       await setStatus(
         octokit,
@@ -80,7 +90,7 @@ export async function run(): Promise<void> {
         selfId,
         allSummaries
       )
-      await new Promise((resolve) => setTimeout(resolve, 10000)) // Wait between polling
+      await new Promise((resolve) => setTimeout(resolve, interval * 1000)) // Wait between polling
     }
   } catch (error) {
     if (error instanceof Error) {

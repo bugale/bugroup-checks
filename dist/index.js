@@ -30831,7 +30831,10 @@ async function run() {
         const requiredStatus = (0, core_1.getMultilineInput)('requiredStatus');
         const githubToken = (0, core_1.getInput)('githubToken');
         const ref = (0, core_1.getInput)('ref');
+        const delay = parseInt((0, core_1.getInput)('delay'), 10);
+        const interval = parseInt((0, core_1.getInput)('interval'), 10);
         let selfId;
+        let noNewJobsCounter = 0;
         while (true) {
             const octokit = (0, github_1.getOctokit)(githubToken);
             const { data: refChecks } = await octokit.rest.checks.listForRef({ ...github_1.context.repo, ref });
@@ -30857,6 +30860,12 @@ async function run() {
             const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed');
             (0, core_1.debug)(`incompleteChecks: ${JSON.stringify(incompleteChecks)}`);
             if (incompleteChecks.length === 0) {
+                if (noNewJobsCounter < 1) {
+                    (0, core_1.debug)('No incomplete jobs found, waiting for new jobs to start...');
+                    noNewJobsCounter++;
+                    await new Promise((resolve) => setTimeout(resolve, delay * 1000)); // Wait for new jobs to start
+                    continue;
+                }
                 const unsuccessfulChecks = requiredChecks.filter((check) => !requiredStatus.includes(check.conclusion ?? 'none'));
                 (0, core_1.debug)(`unsuccessfulChecks: ${JSON.stringify(unsuccessfulChecks)}`);
                 if (unsuccessfulChecks.length === 0) {
@@ -30867,8 +30876,9 @@ async function run() {
                 (0, core_1.setFailed)(`${unsuccessfulChecks.length}/${requiredChecks.length} checks failed: ${unsuccessfulChecks.map((check) => check.name).join(', ')}`);
                 return;
             }
+            noNewJobsCounter = 0;
             await setStatus(octokit, `${requiredChecks.length - incompleteChecks.length}/${requiredChecks.length} waiting for: ${incompleteChecks.map((check) => check.name).join(', ')}`, selfId, allSummaries);
-            await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait between polling
+            await new Promise((resolve) => setTimeout(resolve, interval * 1000)); // Wait between polling
         }
     }
     catch (error) {
