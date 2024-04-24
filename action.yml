@@ -28,5 +28,5 @@ inputs:
     default: ${{ github.event.pull_request.head.sha }}
     required: false
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
