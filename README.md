@@ -44,3 +44,7 @@ jobs:
 - `githubToken`: A token with which to interact with GitHub. Can be omitted to use the default token.
 
 - `ref`: The git ref to get the checks for. Defaults to the pull request's head ref.
+
+- `delay`: The delay in seconds to wait for the checks to start running. Defaults to 10.
+
+- `interval`: The interval in seconds to wait between checking again. Defaults to 10.
