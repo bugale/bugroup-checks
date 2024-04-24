@@ -23,7 +23,6 @@ export async function run(): Promise<void> {
   try {
     const checkRegexes = getMultilineInput('checks').map((check) => RegExp(`^${check}$`))
     const excludedCheckRegexes = getMultilineInput('excludedChecks').map((check) => RegExp(`^${check}$`))
-    const self = getInput('self')
     const requiredStatus = getMultilineInput('requiredStatus')
     const githubToken = getInput('githubToken')
     const ref = getInput('ref')
@@ -34,10 +33,10 @@ export async function run(): Promise<void> {
       const { data: refChecks } = await octokit.rest.checks.listForRef({ ...context.repo, ref })
       debug(`refChecks for ${ref}: ${JSON.stringify(refChecks)}`)
 
-      if (selfId === undefined && self !== '') {
+      if (selfId === undefined) {
         selfId = null
         try {
-          selfId = refChecks.check_runs.filter((check) => check.name === self)[0].id
+          selfId = refChecks.check_runs.filter((check) => check.name === context.job)[0].id
         } catch (error) {
           if (error instanceof Error) {
             warning(`Couldn't find self check: ${error.message}`)
