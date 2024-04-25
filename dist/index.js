@@ -30828,6 +30828,7 @@ async function run() {
     try {
         const checkRegexes = (0, core_1.getMultilineInput)('checks').map((check) => RegExp(`^${check}$`));
         const excludedCheckRegexes = (0, core_1.getMultilineInput)('excludedChecks').map((check) => RegExp(`^${check}$`));
+        const self = (0, core_1.getInput)('self');
         const requiredStatus = (0, core_1.getMultilineInput)('requiredStatus');
         const githubToken = (0, core_1.getInput)('githubToken');
         const ref = (0, core_1.getInput)('ref');
@@ -30839,10 +30840,10 @@ async function run() {
             const octokit = (0, github_1.getOctokit)(githubToken);
             const { data: refChecks } = await octokit.rest.checks.listForRef({ ...github_1.context.repo, ref });
             (0, core_1.debug)(`refChecks for ${ref}: ${JSON.stringify(refChecks)}`);
-            if (selfId === undefined) {
+            if (selfId === undefined && self !== '') {
                 selfId = null;
                 try {
-                    selfId = refChecks.check_runs.filter((check) => check.name === github_1.context.job)[0].id;
+                    selfId = refChecks.check_runs.filter((check) => check.name === self)[0].id;
                 }
                 catch (error) {
                     if (error instanceof Error) {

@@ -29,6 +29,7 @@ jobs:
           checks: |-
             my_check_1
             lint.*
+          self: Grouped Check
 ```
 
 ### Input Parameters
@@ -37,6 +38,8 @@ jobs:
   check name.
 
 - `excludedChecks`: A new-line separated list of JS-style RegExs matching checks that should be excluded, even if they appear in `checks`.
+
+- `self`: The name of the check that includes this action. Used to avoid waiting for itself to finish, and to set the description on the check.
 
 - `requiredStatus`: A new-line separated list of statuses which are considered successful. The action will fail if any of the checks in `checks` is not has a
   status that is not in this list. Defaults to `success,skipped`.
