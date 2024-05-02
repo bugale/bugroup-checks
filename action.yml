@@ -9,6 +9,10 @@ inputs:
     description: 'A new-line separated list of RegExes to exclude from the aggregation'
     required: false
     default: ''
+  self:
+    description: 'The name of the job that runs this action'
+    default: ''
+    required: false
   requiredStatus:
     description: 'A new-line separated list of check status for which the aggregated check should be marked as successful'
     required: false
