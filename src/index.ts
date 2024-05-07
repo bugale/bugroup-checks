@@ -9,7 +9,7 @@ async function setStatus(octokit: ReturnType<typeof getOctokit>, status: string,
       await octokit.rest.checks.update({
         ...context.repo,
         check_run_id: selfId,
-        output: { summary: allSummaries ?? '', title: status }
+        output: { summary: allSummaries ?? '', title: status, text: `<!--BUGROUP_CHECKS-${context.runId}-->` }
       })
     } catch (error) {
       if (error instanceof Error) {

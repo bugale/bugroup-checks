@@ -36,6 +36,8 @@ jobs:
         with:
           fetch-depth: ${{ steps.get-base.outputs.required }}
           ref: ${{ github.event.pull_request.head.sha }}
+      - name: Rerun bugroup-checks
+        uses: ./rerun
       - name: Check Commits
         run: |-
           commitlint --from ${{ github.event.pull_request.head.sha }}~${{ steps.get-base.outputs.commit-count }} --to ${{ github.event.pull_request.head.sha }}

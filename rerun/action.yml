@@ -1,0 +1,15 @@
+---
+name: 'Rerun bugroup-checks'
+description: 'Rerun the job containing the bugroup-checks action'
+inputs:
+  githubToken:
+    description: 'Github token of the repository (automatically created by Github)'
+    default: ${{ github.token }}
+    required: false
+  ref:
+    description: 'The ref to check'
+    default: ${{ github.event.pull_request.head.sha }}
+    required: false
+runs:
+  using: 'node20'
+  main: '../dist/rerun/index.js'
