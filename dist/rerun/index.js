@@ -30836,8 +30836,9 @@ async function run() {
         (0, core_1.debug)("Couldn't find bugroup-checks job");
     }
     catch (error) {
+        // The failure might be due to a race (someone else already rerun the job and now it's running)
         if (error instanceof Error) {
-            (0, core_1.setFailed)(error.message);
+            (0, core_1.info)(`Ignored error: ${error.message}`);
         }
     }
 }
