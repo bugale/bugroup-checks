@@ -1,5 +1,5 @@
 import { context, getOctokit } from '@actions/github'
-import { getInput, debug, info, setFailed } from '@actions/core'
+import { getInput, debug, info } from '@actions/core'
 
 export async function run(): Promise<void> {
   /* eslint camelcase: ["error", {allow: ['^run_id$', '^job_id$']}] */
@@ -30,8 +30,9 @@ export async function run(): Promise<void> {
     }
     debug("Couldn't find bugroup-checks job")
   } catch (error) {
+    // The failure might be due to a race (someone else already rerun the job and now it's running)
     if (error instanceof Error) {
-      setFailed(error.message)
+      info(`Ignored error: ${error.message}`)
     }
   }
 }
