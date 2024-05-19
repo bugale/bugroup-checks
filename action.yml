@@ -35,6 +35,13 @@ inputs:
     description: 'The interval in seconds to wait between checking again'
     default: '10'
     required: false
+outputs:
+  allChecks:
+    description: 'A JSON of checks returned by the last call to GitHubs listForRef'
+  requiredChecks:
+    description: 'A JSON of checks from allChecks that were required to be successful'
+  unsuccessfulChecks:
+    description: 'A JSON of checks from allChecks that have failed'
 runs:
   using: 'node20'
   main: 'dist/index.js'
