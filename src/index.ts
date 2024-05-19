@@ -1,5 +1,5 @@
 import { context, getOctokit } from '@actions/github'
-import { getInput, getMultilineInput, debug, info, warning, setFailed } from '@actions/core'
+import { getInput, getMultilineInput, debug, info, warning, setFailed, setOutput } from '@actions/core'
 
 async function setStatus(octokit: ReturnType<typeof getOctokit>, status: string, selfId?: number | null, allSummaries?: string): Promise<void> {
   /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
@@ -32,10 +32,15 @@ export async function run(): Promise<void> {
     let selfId: number | undefined | null
     let noNewJobsCounter = 0
 
+    setOutput('allChecks', '[]')
+    setOutput('requiredChecks', '[]')
+    setOutput('unsuccessfulChecks', '[]')
+
     while (true) {
       const octokit = getOctokit(githubToken)
       const { data: refChecks } = await octokit.rest.checks.listForRef({ ...context.repo, ref })
       debug(`refChecks for ${ref}: ${JSON.stringify(refChecks)}`)
+      setOutput('allChecks', JSON.stringify(refChecks.check_runs))
 
       if (selfId === undefined && self !== '') {
         selfId = null
@@ -57,6 +62,7 @@ export async function run(): Promise<void> {
           !refChecks.check_runs.some((otherCheck) => otherCheck.name === check.name && otherCheck.id > check.id)
       )
       debug(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`)
+      setOutput('requiredChecks', JSON.stringify(requiredChecks))
 
       const allSummaries = requiredChecks.map((check) => check.output.summary ?? '').join('')
       const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed')
@@ -70,6 +76,7 @@ export async function run(): Promise<void> {
         }
         const unsuccessfulChecks = requiredChecks.filter((check) => !requiredStatus.includes(check.conclusion ?? 'none'))
         debug(`unsuccessfulChecks: ${JSON.stringify(unsuccessfulChecks)}`)
+        setOutput('unsuccessfulChecks', JSON.stringify(unsuccessfulChecks))
         if (unsuccessfulChecks.length === 0) {
           await setStatus(octokit, `${requiredChecks.length}/${requiredChecks.length} checks completed successfully`, selfId, allSummaries)
           return

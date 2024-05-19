@@ -30836,10 +30836,14 @@ async function run() {
         const interval = parseInt((0, core_1.getInput)('interval'), 10);
         let selfId;
         let noNewJobsCounter = 0;
+        (0, core_1.setOutput)('allChecks', '[]');
+        (0, core_1.setOutput)('requiredChecks', '[]');
+        (0, core_1.setOutput)('unsuccessfulChecks', '[]');
         while (true) {
             const octokit = (0, github_1.getOctokit)(githubToken);
             const { data: refChecks } = await octokit.rest.checks.listForRef({ ...github_1.context.repo, ref });
             (0, core_1.debug)(`refChecks for ${ref}: ${JSON.stringify(refChecks)}`);
+            (0, core_1.setOutput)('allChecks', JSON.stringify(refChecks.check_runs));
             if (selfId === undefined && self !== '') {
                 selfId = null;
                 try {
@@ -30857,6 +30861,7 @@ async function run() {
                 check.id !== selfId &&
                 !refChecks.check_runs.some((otherCheck) => otherCheck.name === check.name && otherCheck.id > check.id));
             (0, core_1.debug)(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`);
+            (0, core_1.setOutput)('requiredChecks', JSON.stringify(requiredChecks));
             const allSummaries = requiredChecks.map((check) => check.output.summary ?? '').join('');
             const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed');
             (0, core_1.debug)(`incompleteChecks: ${JSON.stringify(incompleteChecks)}`);
@@ -30869,6 +30874,7 @@ async function run() {
                 }
                 const unsuccessfulChecks = requiredChecks.filter((check) => !requiredStatus.includes(check.conclusion ?? 'none'));
                 (0, core_1.debug)(`unsuccessfulChecks: ${JSON.stringify(unsuccessfulChecks)}`);
+                (0, core_1.setOutput)('unsuccessfulChecks', JSON.stringify(unsuccessfulChecks));
                 if (unsuccessfulChecks.length === 0) {
                     await setStatus(octokit, `${requiredChecks.length}/${requiredChecks.length} checks completed successfully`, selfId, allSummaries);
                     return;

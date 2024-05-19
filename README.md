@@ -74,6 +74,14 @@ jobs:
 
 - `interval`: The interval in seconds to wait between checking again. Defaults to 10.
 
+### Output Parameters
+
+- `allChecks`: A JSON of checks returned by the last call to GitHubs listForRef
+
+- `requiredChecks`: A JSON of checks from `allChecks` that were required to be successful
+
+- `unsuccessfulChecks`: A JSON of checks from `allChecks` that have failed
+
 ### Rerun Input Parameters
 
 - `githubToken`: A token with which to interact with GitHub. Can be omitted to use the default token.
