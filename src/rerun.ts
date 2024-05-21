@@ -6,11 +6,12 @@ export async function run(): Promise<void> {
   try {
     const githubToken = getInput('githubToken')
     const ref = getInput('ref')
+    const jobIdentifier = getInput('jobIdentifier')
     const octokit = getOctokit(githubToken)
     const { data: refChecks } = await octokit.rest.checks.listForRef({ ...context.repo, ref })
     debug(`refChecks for ${ref}: ${JSON.stringify(refChecks)}`)
     for (const check of refChecks.check_runs) {
-      const runId = check.output.text?.match(/^<!--BUGROUP_CHECKS-(\d+)-->$/)?.[1]
+      const runId = check.output.text?.match(new RegExp(String.raw`^<!--${jobIdentifier}-(\d+)-->$`))?.[1]
       if (runId !== undefined) {
         debug(`runId: ${runId}`)
         const { data: jobs } = await octokit.rest.actions.listJobsForWorkflowRun({ ...context.repo, run_id: parseInt(runId, 10) })

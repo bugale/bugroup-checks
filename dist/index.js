@@ -30806,7 +30806,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const github_1 = __nccwpck_require__(5438);
 const core_1 = __nccwpck_require__(2186);
-async function setStatus(octokit, status, selfId, allSummaries) {
+async function setStatus(octokit, status, jobIdentifier, selfId, allSummaries) {
     /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
     (0, core_1.info)(status);
     if (selfId != null) {
@@ -30814,7 +30814,7 @@ async function setStatus(octokit, status, selfId, allSummaries) {
             await octokit.rest.checks.update({
                 ...github_1.context.repo,
                 check_run_id: selfId,
-                output: { summary: allSummaries ?? '', title: status, text: `<!--BUGROUP_CHECKS-${github_1.context.runId}-->` }
+                output: { summary: allSummaries ?? '', title: status, text: `<!--${jobIdentifier}-${github_1.context.runId}-->` }
             });
         }
         catch (error) {
@@ -30834,6 +30834,7 @@ async function run() {
         const ref = (0, core_1.getInput)('ref');
         const delay = parseInt((0, core_1.getInput)('delay'), 10);
         const interval = parseInt((0, core_1.getInput)('interval'), 10);
+        const jobIdentifier = (0, core_1.getInput)('jobIdentifier');
         let selfId;
         let noNewJobsCounter = 0;
         (0, core_1.setOutput)('allChecks', '[]');
@@ -30876,15 +30877,15 @@ async function run() {
                 (0, core_1.debug)(`unsuccessfulChecks: ${JSON.stringify(unsuccessfulChecks)}`);
                 (0, core_1.setOutput)('unsuccessfulChecks', JSON.stringify(unsuccessfulChecks));
                 if (unsuccessfulChecks.length === 0) {
-                    await setStatus(octokit, `${requiredChecks.length}/${requiredChecks.length} checks completed successfully`, selfId, allSummaries);
+                    await setStatus(octokit, `${requiredChecks.length}/${requiredChecks.length} checks completed successfully`, jobIdentifier, selfId, allSummaries);
                     return;
                 }
-                await setStatus(octokit, `${unsuccessfulChecks.length}/${requiredChecks.length} checks failed: ${unsuccessfulChecks.map((check) => check.name).join(', ')}`, selfId, allSummaries);
+                await setStatus(octokit, `${unsuccessfulChecks.length}/${requiredChecks.length} checks failed: ${unsuccessfulChecks.map((check) => check.name).join(', ')}`, jobIdentifier, selfId, allSummaries);
                 (0, core_1.setFailed)(`${unsuccessfulChecks.length}/${requiredChecks.length} checks failed: ${unsuccessfulChecks.map((check) => check.name).join(', ')}`);
                 return;
             }
             noNewJobsCounter = 0;
-            await setStatus(octokit, `${requiredChecks.length - incompleteChecks.length}/${requiredChecks.length} waiting for: ${incompleteChecks.map((check) => check.name).join(', ')}`, selfId, allSummaries);
+            await setStatus(octokit, `${requiredChecks.length - incompleteChecks.length}/${requiredChecks.length} waiting for: ${incompleteChecks.map((check) => check.name).join(', ')}`, jobIdentifier, selfId, allSummaries);
             await new Promise((resolve) => setTimeout(resolve, interval * 1000)); // Wait between polling
         }
     }

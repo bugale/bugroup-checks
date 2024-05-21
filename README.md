@@ -74,6 +74,9 @@ jobs:
 
 - `interval`: The interval in seconds to wait between checking again. Defaults to 10.
 
+- `jobIdentifier`: The identifier of the check, which is used to identify the job from the rerun action. Defaults to BUGROUP_CHECKS.
+  This is useful in case there's more than one bugroup-checks job for the same git ref.
+
 ### Output Parameters
 
 - `allChecks`: A JSON of checks returned by the last call to GitHubs listForRef
@@ -87,3 +90,5 @@ jobs:
 - `githubToken`: A token with which to interact with GitHub. Can be omitted to use the default token.
 
 - `ref`: The git ref to get the checks for. Defaults to the pull request's head ref.
+
+- `jobIdentifier`: The identifier of the job to rerun. Defaults to BUGROUP_CHECKS.

@@ -10,6 +10,10 @@ inputs:
     description: 'The ref to check'
     default: ${{ github.event.pull_request.head.sha }}
     required: false
+  jobIdentifier:
+    description: 'The identifier of the job to rerun'
+    default: 'BUGROUP_CHECKS'
+    required: false
 runs:
   using: 'node20'
   main: '../dist/rerun/index.js'
