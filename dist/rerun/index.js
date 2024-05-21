@@ -30811,11 +30811,12 @@ async function run() {
     try {
         const githubToken = (0, core_1.getInput)('githubToken');
         const ref = (0, core_1.getInput)('ref');
+        const jobIdentifier = (0, core_1.getInput)('jobIdentifier');
         const octokit = (0, github_1.getOctokit)(githubToken);
         const { data: refChecks } = await octokit.rest.checks.listForRef({ ...github_1.context.repo, ref });
         (0, core_1.debug)(`refChecks for ${ref}: ${JSON.stringify(refChecks)}`);
         for (const check of refChecks.check_runs) {
-            const runId = check.output.text?.match(/^<!--BUGROUP_CHECKS-(\d+)-->$/)?.[1];
+            const runId = check.output.text?.match(new RegExp(String.raw `^<!--${jobIdentifier}-(\d+)-->$`))?.[1];
             if (runId !== undefined) {
                 (0, core_1.debug)(`runId: ${runId}`);
                 const { data: jobs } = await octokit.rest.actions.listJobsForWorkflowRun({ ...github_1.context.repo, run_id: parseInt(runId, 10) });

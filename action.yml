@@ -35,6 +35,10 @@ inputs:
     description: 'The interval in seconds to wait between checking again'
     default: '10'
     required: false
+  jobIdentifier:
+    description: 'The identifier of the check, which is used to identify the job from the rerun action'
+    default: 'BUGROUP_CHECKS'
+    required: false
 outputs:
   allChecks:
     description: 'A JSON of checks returned by the last call to GitHubs listForRef'

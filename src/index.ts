@@ -1,7 +1,13 @@
 import { context, getOctokit } from '@actions/github'
 import { getInput, getMultilineInput, debug, info, warning, setFailed, setOutput } from '@actions/core'
 
-async function setStatus(octokit: ReturnType<typeof getOctokit>, status: string, selfId?: number | null, allSummaries?: string): Promise<void> {
+async function setStatus(
+  octokit: ReturnType<typeof getOctokit>,
+  status: string,
+  jobIdentifier: string,
+  selfId?: number | null,
+  allSummaries?: string
+): Promise<void> {
   /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
   info(status)
   if (selfId != null) {
@@ -9,7 +15,7 @@ async function setStatus(octokit: ReturnType<typeof getOctokit>, status: string,
       await octokit.rest.checks.update({
         ...context.repo,
         check_run_id: selfId,
-        output: { summary: allSummaries ?? '', title: status, text: `<!--BUGROUP_CHECKS-${context.runId}-->` }
+        output: { summary: allSummaries ?? '', title: status, text: `<!--${jobIdentifier}-${context.runId}-->` }
       })
     } catch (error) {
       if (error instanceof Error) {
@@ -29,6 +35,7 @@ export async function run(): Promise<void> {
     const ref = getInput('ref')
     const delay = parseInt(getInput('delay'), 10)
     const interval = parseInt(getInput('interval'), 10)
+    const jobIdentifier = getInput('jobIdentifier')
     let selfId: number | undefined | null
     let noNewJobsCounter = 0
 
@@ -78,12 +85,13 @@ export async function run(): Promise<void> {
         debug(`unsuccessfulChecks: ${JSON.stringify(unsuccessfulChecks)}`)
         setOutput('unsuccessfulChecks', JSON.stringify(unsuccessfulChecks))
         if (unsuccessfulChecks.length === 0) {
-          await setStatus(octokit, `${requiredChecks.length}/${requiredChecks.length} checks completed successfully`, selfId, allSummaries)
+          await setStatus(octokit, `${requiredChecks.length}/${requiredChecks.length} checks completed successfully`, jobIdentifier, selfId, allSummaries)
           return
         }
         await setStatus(
           octokit,
           `${unsuccessfulChecks.length}/${requiredChecks.length} checks failed: ${unsuccessfulChecks.map((check) => check.name).join(', ')}`,
+          jobIdentifier,
           selfId,
           allSummaries
         )
@@ -95,6 +103,7 @@ export async function run(): Promise<void> {
       await setStatus(
         octokit,
         `${requiredChecks.length - incompleteChecks.length}/${requiredChecks.length} waiting for: ${incompleteChecks.map((check) => check.name).join(', ')}`,
+        jobIdentifier,
         selfId,
         allSummaries
       )
