@@ -39,6 +39,10 @@ inputs:
     description: 'The identifier of the check, which is used to identify the job from the rerun action'
     default: 'BUGROUP_CHECKS'
     required: false
+  flags:
+    description: 'A new-line separated list of flags (set using the `/flag` action) to regard as job succeeded'
+    required: false
+    default: ''
 outputs:
   allChecks:
     description: 'A JSON of checks returned by the last call to GitHubs listForRef'

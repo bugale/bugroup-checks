@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "package": "ncc build src/index.ts && ncc build src/rerun.ts -o dist/rerun",
+    "package": "ncc build src/index.ts && ncc build src/rerun.ts -o dist/rerun && ncc build src/flag.ts -o dist/flag",
     "lint": "npx eslint ."
   },
   "dependencies": {

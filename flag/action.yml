@@ -1,0 +1,21 @@
+---
+name: 'Flag job for bugroup-checks'
+description: 'Flags a job for the bugroup-checks action'
+inputs:
+  githubToken:
+    description: 'Github token of the repository (automatically created by Github)'
+    default: ${{ github.token }}
+    required: false
+  ref:
+    description: 'The ref to check'
+    default: ${{ github.event.pull_request.head.sha }}
+    required: false
+  self:
+    description: 'The name of the job that runs this action'
+    default: ''
+    required: false
+  flag:
+    description: 'The name of the flag to set'
+runs:
+  using: 'node20'
+  main: '../dist/flag/index.js'

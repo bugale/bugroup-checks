@@ -25,6 +25,10 @@ async function setStatus(
   }
 }
 
+function isFlagged(text: string, flags: string[]): boolean {
+  return flags.some((flag) => text.includes(`<!--BUGROUP_CHECKS_FLAG-${flag}-->`))
+}
+
 export async function run(): Promise<void> {
   try {
     const checkRegexes = getMultilineInput('checks').map((check) => RegExp(`^${check}$`))
@@ -36,6 +40,7 @@ export async function run(): Promise<void> {
     const delay = parseInt(getInput('delay'), 10)
     const interval = parseInt(getInput('interval'), 10)
     const jobIdentifier = getInput('jobIdentifier')
+    const flags = getMultilineInput('flags')
     let selfId: number | undefined | null
     let noNewJobsCounter = 0
 
@@ -72,7 +77,7 @@ export async function run(): Promise<void> {
       setOutput('requiredChecks', JSON.stringify(requiredChecks))
 
       const allSummaries = requiredChecks.map((check) => check.output.summary ?? '').join('')
-      const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed')
+      const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed' && !isFlagged(check.output.text ?? '', flags))
       debug(`incompleteChecks: ${JSON.stringify(incompleteChecks)}`)
       if (incompleteChecks.length === 0) {
         if (noNewJobsCounter < 1) {
@@ -81,7 +86,9 @@ export async function run(): Promise<void> {
           await new Promise((resolve) => setTimeout(resolve, delay * 1000)) // Wait for new jobs to start
           continue
         }
-        const unsuccessfulChecks = requiredChecks.filter((check) => !requiredStatus.includes(check.conclusion ?? 'none'))
+        const unsuccessfulChecks = requiredChecks.filter(
+          (check) => !requiredStatus.includes(check.conclusion ?? 'none') && !isFlagged(check.output.text ?? '', flags)
+        )
         debug(`unsuccessfulChecks: ${JSON.stringify(unsuccessfulChecks)}`)
         setOutput('unsuccessfulChecks', JSON.stringify(unsuccessfulChecks))
         if (unsuccessfulChecks.length === 0) {

@@ -30806,92 +30806,26 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const github_1 = __nccwpck_require__(5438);
 const core_1 = __nccwpck_require__(2186);
-async function setStatus(octokit, status, jobIdentifier, selfId, allSummaries) {
-    /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
-    (0, core_1.info)(status);
-    if (selfId != null) {
-        try {
-            await octokit.rest.checks.update({
-                ...github_1.context.repo,
-                check_run_id: selfId,
-                output: { summary: allSummaries ?? '', title: status, text: `<!--${jobIdentifier}-${github_1.context.runId}-->` }
-            });
-        }
-        catch (error) {
-            if (error instanceof Error) {
-                (0, core_1.warning)(`Couldn't update self check: ${error.message}`);
-            }
-        }
-    }
-}
-function isFlagged(text, flags) {
-    return flags.some((flag) => text.includes(`<!--BUGROUP_CHECKS_FLAG-${flag}-->`));
-}
 async function run() {
+    /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
     try {
-        const checkRegexes = (0, core_1.getMultilineInput)('checks').map((check) => RegExp(`^${check}$`));
-        const excludedCheckRegexes = (0, core_1.getMultilineInput)('excludedChecks').map((check) => RegExp(`^${check}$`));
-        const self = (0, core_1.getInput)('self');
-        const requiredStatus = (0, core_1.getMultilineInput)('requiredStatus');
         const githubToken = (0, core_1.getInput)('githubToken');
         const ref = (0, core_1.getInput)('ref');
-        const delay = parseInt((0, core_1.getInput)('delay'), 10);
-        const interval = parseInt((0, core_1.getInput)('interval'), 10);
-        const jobIdentifier = (0, core_1.getInput)('jobIdentifier');
-        const flags = (0, core_1.getMultilineInput)('flags');
-        let selfId;
-        let noNewJobsCounter = 0;
-        (0, core_1.setOutput)('allChecks', '[]');
-        (0, core_1.setOutput)('requiredChecks', '[]');
-        (0, core_1.setOutput)('unsuccessfulChecks', '[]');
-        while (true) {
-            const octokit = (0, github_1.getOctokit)(githubToken);
-            const { data: refChecks } = await octokit.rest.checks.listForRef({ ...github_1.context.repo, ref });
-            (0, core_1.debug)(`refChecks for ${ref}: ${JSON.stringify(refChecks)}`);
-            (0, core_1.setOutput)('allChecks', JSON.stringify(refChecks.check_runs));
-            if (selfId === undefined && self !== '') {
-                selfId = null;
-                try {
-                    selfId = refChecks.check_runs.filter((check) => check.name === self)[0].id;
-                }
-                catch (error) {
-                    if (error instanceof Error) {
-                        (0, core_1.warning)(`Couldn't find self check: ${error.message}`);
-                    }
-                }
-                (0, core_1.debug)(`selfId: ${selfId}`);
-            }
-            const requiredChecks = refChecks.check_runs.filter((check) => checkRegexes.some((regex) => regex.test(check.name)) &&
-                !excludedCheckRegexes.some((regex) => regex.test(check.name)) &&
-                check.id !== selfId &&
-                !refChecks.check_runs.some((otherCheck) => otherCheck.name === check.name && otherCheck.id > check.id));
-            (0, core_1.debug)(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`);
-            (0, core_1.setOutput)('requiredChecks', JSON.stringify(requiredChecks));
-            const allSummaries = requiredChecks.map((check) => check.output.summary ?? '').join('');
-            const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed' && !isFlagged(check.output.text ?? '', flags));
-            (0, core_1.debug)(`incompleteChecks: ${JSON.stringify(incompleteChecks)}`);
-            if (incompleteChecks.length === 0) {
-                if (noNewJobsCounter < 1) {
-                    (0, core_1.debug)('No incomplete jobs found, waiting for new jobs to start...');
-                    noNewJobsCounter++;
-                    await new Promise((resolve) => setTimeout(resolve, delay * 1000)); // Wait for new jobs to start
-                    continue;
-                }
-                const unsuccessfulChecks = requiredChecks.filter((check) => !requiredStatus.includes(check.conclusion ?? 'none') && !isFlagged(check.output.text ?? '', flags));
-                (0, core_1.debug)(`unsuccessfulChecks: ${JSON.stringify(unsuccessfulChecks)}`);
-                (0, core_1.setOutput)('unsuccessfulChecks', JSON.stringify(unsuccessfulChecks));
-                if (unsuccessfulChecks.length === 0) {
-                    await setStatus(octokit, `${requiredChecks.length}/${requiredChecks.length} checks completed successfully`, jobIdentifier, selfId, allSummaries);
-                    return;
-                }
-                await setStatus(octokit, `${unsuccessfulChecks.length}/${requiredChecks.length} checks failed: ${unsuccessfulChecks.map((check) => check.name).join(', ')}`, jobIdentifier, selfId, allSummaries);
-                (0, core_1.setFailed)(`${unsuccessfulChecks.length}/${requiredChecks.length} checks failed: ${unsuccessfulChecks.map((check) => check.name).join(', ')}`);
-                return;
-            }
-            noNewJobsCounter = 0;
-            await setStatus(octokit, `${requiredChecks.length - incompleteChecks.length}/${requiredChecks.length} waiting for: ${incompleteChecks.map((check) => check.name).join(', ')}`, jobIdentifier, selfId, allSummaries);
-            await new Promise((resolve) => setTimeout(resolve, interval * 1000)); // Wait between polling
+        const self = (0, core_1.getInput)('self');
+        const flag = (0, core_1.getInput)('flag');
+        const octokit = (0, github_1.getOctokit)(githubToken);
+        const { data: refChecks } = await octokit.rest.checks.listForRef({ ...github_1.context.repo, ref });
+        (0, core_1.debug)(`refChecks for ${ref}: ${JSON.stringify(refChecks)}`);
+        const selfChecks = refChecks.check_runs.filter((check) => check.name === self);
+        if (selfChecks.length === 0) {
+            (0, core_1.setFailed)(`Couldn't find self check: ${self}`);
+            return;
         }
+        await octokit.rest.checks.update({
+            ...github_1.context.repo,
+            check_run_id: selfChecks[0].id,
+            output: { summary: selfChecks[0].output.summary ?? '', title: selfChecks[0].output.title ?? '', text: `<!--BUGROUP_CHECKS_FLAG-${flag}-->` }
+        });
     }
     catch (error) {
         if (error instanceof Error) {

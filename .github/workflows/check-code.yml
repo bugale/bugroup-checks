@@ -53,3 +53,37 @@ jobs:
         if: always()
         with:
           sarif_file: lint.sarif
+  check-flag:
+    name: Check Flag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Rerun bugroup-checks
+        uses: ./rerun
+        with:
+          jobIdentifier: BUGROUP_CHECKS_FLAG
+      - name: Flag job
+        uses: ./flag
+        with:
+          self: Check Flag
+          flag: flag
+      - name: Wait
+        run: sleep 60
+  check-flagged:
+    name: Check Flagged
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Wait for Flag
+        id: wait
+        uses: ./
+        with:
+          checks: Check Flag
+          flags: flag
+          self: Check Flagged
+          jobIdentifier: BUGROUP_CHECKS_FLAG
+      - name: Fail if not Running
+        if: ${{ join(fromJson(steps.wait.outputs.requiredChecks).*.status, '') != 'in_progress' }}
+        run: exit 1
