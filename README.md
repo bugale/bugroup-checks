@@ -137,6 +137,8 @@ jobs:
 
 - `flags`: A new-line separated list of flags (set using the `/flag` action) to regard as job succeeded. Empty by default.
 
+- `requiredChecksMaxCount`: The maximum number of required checks. If this number is found, no waiting for newer jobs will be done. Defaults to 0 (no limit).
+
 ### Output Parameters
 
 - `allChecks`: A JSON of checks returned by the last call to GitHubs listForRef
