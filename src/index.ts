@@ -1,13 +1,7 @@
 import { context, getOctokit } from '@actions/github'
 import { getInput, getMultilineInput, debug, info, warning, setFailed, setOutput } from '@actions/core'
 
-async function setStatus(
-  octokit: ReturnType<typeof getOctokit>,
-  status: string,
-  jobIdentifier: string,
-  selfId?: number | null,
-  allSummaries?: string
-): Promise<void> {
+async function setStatus(octokit: ReturnType<typeof getOctokit>, status: string, jobIdentifier: string, selfId?: number | null): Promise<void> {
   /* eslint camelcase: ["error", {allow: ['^check_run_id$', '^external_id$']}] */
   info(status)
   if (selfId != null) {
@@ -16,7 +10,7 @@ async function setStatus(
         ...context.repo,
         check_run_id: selfId,
         external_id: `<!--${jobIdentifier}-${context.runId}-->`,
-        output: { summary: allSummaries ?? '', title: status }
+        output: { summary: '', title: status }
       })
     } catch (error) {
       if (error instanceof Error) {
@@ -77,7 +71,6 @@ export async function run(): Promise<void> {
       debug(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`)
       setOutput('requiredChecks', JSON.stringify(requiredChecks))
 
-      const allSummaries = requiredChecks.map((check) => check.output.summary ?? '').join('')
       const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed' && !isFlagged(check.external_id ?? '', flags))
       debug(`incompleteChecks: ${JSON.stringify(incompleteChecks)}`)
       if (incompleteChecks.length === 0) {
@@ -93,15 +86,14 @@ export async function run(): Promise<void> {
         debug(`unsuccessfulChecks: ${JSON.stringify(unsuccessfulChecks)}`)
         setOutput('unsuccessfulChecks', JSON.stringify(unsuccessfulChecks))
         if (unsuccessfulChecks.length === 0) {
-          await setStatus(octokit, `${requiredChecks.length}/${requiredChecks.length} checks completed successfully`, jobIdentifier, selfId, allSummaries)
+          await setStatus(octokit, `${requiredChecks.length}/${requiredChecks.length} checks completed successfully`, jobIdentifier, selfId)
           return
         }
         await setStatus(
           octokit,
           `${unsuccessfulChecks.length}/${requiredChecks.length} checks failed: ${unsuccessfulChecks.map((check) => check.name).join(', ')}`,
           jobIdentifier,
-          selfId,
-          allSummaries
+          selfId
         )
         setFailed(`${unsuccessfulChecks.length}/${requiredChecks.length} checks failed: ${unsuccessfulChecks.map((check) => check.name).join(', ')}`)
         return
@@ -112,8 +104,7 @@ export async function run(): Promise<void> {
         octokit,
         `${requiredChecks.length - incompleteChecks.length}/${requiredChecks.length} waiting for: ${incompleteChecks.map((check) => check.name).join(', ')}`,
         jobIdentifier,
-        selfId,
-        allSummaries
+        selfId
       )
       await new Promise((resolve) => setTimeout(resolve, interval * 1000)) // Wait between polling
     }
