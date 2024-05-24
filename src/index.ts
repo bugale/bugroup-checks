@@ -8,14 +8,15 @@ async function setStatus(
   selfId?: number | null,
   allSummaries?: string
 ): Promise<void> {
-  /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
+  /* eslint camelcase: ["error", {allow: ['^check_run_id$', '^external_id$']}] */
   info(status)
   if (selfId != null) {
     try {
       await octokit.rest.checks.update({
         ...context.repo,
         check_run_id: selfId,
-        output: { summary: allSummaries ?? '', title: status, text: `<!--${jobIdentifier}-${context.runId}-->` }
+        external_id: `<!--${jobIdentifier}-${context.runId}-->`,
+        output: { summary: allSummaries ?? '', title: status }
       })
     } catch (error) {
       if (error instanceof Error) {
@@ -25,8 +26,8 @@ async function setStatus(
   }
 }
 
-function isFlagged(text: string, flags: string[]): boolean {
-  return flags.some((flag) => text.includes(`<!--BUGROUP_CHECKS_FLAG-${flag}-->`))
+function isFlagged(externalId: string, flags: string[]): boolean {
+  return flags.some((flag) => externalId.includes(`<!--BUGROUP_CHECKS_FLAG-${flag}-->`))
 }
 
 export async function run(): Promise<void> {
@@ -77,7 +78,7 @@ export async function run(): Promise<void> {
       setOutput('requiredChecks', JSON.stringify(requiredChecks))
 
       const allSummaries = requiredChecks.map((check) => check.output.summary ?? '').join('')
-      const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed' && !isFlagged(check.output.text ?? '', flags))
+      const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed' && !isFlagged(check.external_id ?? '', flags))
       debug(`incompleteChecks: ${JSON.stringify(incompleteChecks)}`)
       if (incompleteChecks.length === 0) {
         if (noNewJobsCounter < 1) {
@@ -87,7 +88,7 @@ export async function run(): Promise<void> {
           continue
         }
         const unsuccessfulChecks = requiredChecks.filter(
-          (check) => !requiredStatus.includes(check.conclusion ?? 'none') && !isFlagged(check.output.text ?? '', flags)
+          (check) => !requiredStatus.includes(check.conclusion ?? 'none') && !isFlagged(check.external_id ?? '', flags)
         )
         debug(`unsuccessfulChecks: ${JSON.stringify(unsuccessfulChecks)}`)
         setOutput('unsuccessfulChecks', JSON.stringify(unsuccessfulChecks))

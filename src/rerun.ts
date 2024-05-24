@@ -11,7 +11,7 @@ export async function run(): Promise<void> {
     const { data: refChecks } = await octokit.rest.checks.listForRef({ ...context.repo, ref })
     debug(`refChecks for ${ref}: ${JSON.stringify(refChecks)}`)
     for (const check of refChecks.check_runs) {
-      const runId = check.output.text?.match(new RegExp(String.raw`^<!--${jobIdentifier}-(\d+)-->$`))?.[1]
+      const runId = check.external_id?.match(new RegExp(String.raw`^<!--${jobIdentifier}-(\d+)-->$`))?.[1]
       if (runId !== undefined) {
         debug(`runId: ${runId}`)
         const { data: jobs } = await octokit.rest.actions.listJobsForWorkflowRun({ ...context.repo, run_id: parseInt(runId, 10) })
