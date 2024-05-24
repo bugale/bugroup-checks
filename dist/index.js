@@ -30840,6 +30840,7 @@ async function run() {
         const interval = parseInt((0, core_1.getInput)('interval'), 10);
         const jobIdentifier = (0, core_1.getInput)('jobIdentifier');
         const flags = (0, core_1.getMultilineInput)('flags');
+        const requiredChecksMaxCount = parseInt((0, core_1.getInput)('requiredChecksMaxCount'), 10);
         let selfId;
         let noNewJobsCounter = 0;
         (0, core_1.setOutput)('allChecks', '[]');
@@ -30871,7 +30872,7 @@ async function run() {
             const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed' && !isFlagged(check.external_id ?? '', flags));
             (0, core_1.debug)(`incompleteChecks: ${JSON.stringify(incompleteChecks)}`);
             if (incompleteChecks.length === 0) {
-                if (noNewJobsCounter < 1) {
+                if (noNewJobsCounter < 1 && (requiredChecksMaxCount !== 0 || requiredChecks.length >= requiredChecksMaxCount)) {
                     (0, core_1.debug)('No incomplete jobs found, waiting for new jobs to start...');
                     noNewJobsCounter++;
                     await new Promise((resolve) => setTimeout(resolve, delay * 1000)); // Wait for new jobs to start

@@ -81,6 +81,7 @@ jobs:
         uses: ./
         with:
           checks: Check Flag
+          requiredChecksMaxCount: 1
           flags: flag
           self: Check Flagged
           jobIdentifier: BUGROUP_CHECKS_FLAG
