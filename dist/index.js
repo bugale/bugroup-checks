@@ -30807,14 +30807,15 @@ exports.run = void 0;
 const github_1 = __nccwpck_require__(5438);
 const core_1 = __nccwpck_require__(2186);
 async function setStatus(octokit, status, jobIdentifier, selfId, allSummaries) {
-    /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
+    /* eslint camelcase: ["error", {allow: ['^check_run_id$', '^external_id$']}] */
     (0, core_1.info)(status);
     if (selfId != null) {
         try {
             await octokit.rest.checks.update({
                 ...github_1.context.repo,
                 check_run_id: selfId,
-                output: { summary: allSummaries ?? '', title: status, text: `<!--${jobIdentifier}-${github_1.context.runId}-->` }
+                external_id: `<!--${jobIdentifier}-${github_1.context.runId}-->`,
+                output: { summary: allSummaries ?? '', title: status }
             });
         }
         catch (error) {
@@ -30824,8 +30825,8 @@ async function setStatus(octokit, status, jobIdentifier, selfId, allSummaries) {
         }
     }
 }
-function isFlagged(text, flags) {
-    return flags.some((flag) => text.includes(`<!--BUGROUP_CHECKS_FLAG-${flag}-->`));
+function isFlagged(externalId, flags) {
+    return flags.some((flag) => externalId.includes(`<!--BUGROUP_CHECKS_FLAG-${flag}-->`));
 }
 async function run() {
     try {
@@ -30868,7 +30869,7 @@ async function run() {
             (0, core_1.debug)(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`);
             (0, core_1.setOutput)('requiredChecks', JSON.stringify(requiredChecks));
             const allSummaries = requiredChecks.map((check) => check.output.summary ?? '').join('');
-            const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed' && !isFlagged(check.output.text ?? '', flags));
+            const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed' && !isFlagged(check.external_id ?? '', flags));
             (0, core_1.debug)(`incompleteChecks: ${JSON.stringify(incompleteChecks)}`);
             if (incompleteChecks.length === 0) {
                 if (noNewJobsCounter < 1) {
@@ -30877,7 +30878,7 @@ async function run() {
                     await new Promise((resolve) => setTimeout(resolve, delay * 1000)); // Wait for new jobs to start
                     continue;
                 }
-                const unsuccessfulChecks = requiredChecks.filter((check) => !requiredStatus.includes(check.conclusion ?? 'none') && !isFlagged(check.output.text ?? '', flags));
+                const unsuccessfulChecks = requiredChecks.filter((check) => !requiredStatus.includes(check.conclusion ?? 'none') && !isFlagged(check.external_id ?? '', flags));
                 (0, core_1.debug)(`unsuccessfulChecks: ${JSON.stringify(unsuccessfulChecks)}`);
                 (0, core_1.setOutput)('unsuccessfulChecks', JSON.stringify(unsuccessfulChecks));
                 if (unsuccessfulChecks.length === 0) {
