@@ -30807,7 +30807,7 @@ exports.run = void 0;
 const github_1 = __nccwpck_require__(5438);
 const core_1 = __nccwpck_require__(2186);
 async function run() {
-    /* eslint camelcase: ["error", {allow: ['^check_run_id$', '^external_id$']}] */
+    /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
     try {
         const githubToken = (0, core_1.getInput)('githubToken');
         const ref = (0, core_1.getInput)('ref');
@@ -30824,7 +30824,7 @@ async function run() {
         await octokit.rest.checks.update({
             ...github_1.context.repo,
             check_run_id: selfChecks[0].id,
-            external_id: `${selfChecks[0].external_id ?? ''}<!--BUGROUP_CHECKS_FLAG-${flag}-->`
+            output: { summary: selfChecks[0].output.summary ?? '', title: selfChecks[0].output.title ?? '', text: `<!--BUGROUP_CHECKS_FLAG-${flag}-->` }
         });
     }
     catch (error) {

@@ -2,7 +2,7 @@ import { context, getOctokit } from '@actions/github'
 import { getInput, debug, setFailed } from '@actions/core'
 
 export async function run(): Promise<void> {
-  /* eslint camelcase: ["error", {allow: ['^check_run_id$', '^external_id$']}] */
+  /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
   try {
     const githubToken = getInput('githubToken')
     const ref = getInput('ref')
@@ -19,7 +19,7 @@ export async function run(): Promise<void> {
     await octokit.rest.checks.update({
       ...context.repo,
       check_run_id: selfChecks[0].id,
-      external_id: `${selfChecks[0].external_id ?? ''}<!--BUGROUP_CHECKS_FLAG-${flag}-->`
+      output: { summary: selfChecks[0].output.summary ?? '', title: selfChecks[0].output.title ?? '', text: `<!--BUGROUP_CHECKS_FLAG-${flag}-->` }
     })
   } catch (error) {
     if (error instanceof Error) {
