@@ -47,6 +47,10 @@ inputs:
     description: 'The maximum number of required checks. If this number is found, no waiting for newer jobs will be done. 0 means no limit'
     required: false
     default: '0'
+  requiredChecksGithubEvents:
+    description: 'A new-line separated list of RegExes matching Github events, that required checks must have been run for. Leave empty to avoid checking'
+    required: false
+    default: 'pull_request'
 outputs:
   allChecks:
     description: 'A JSON of checks returned by the last call to GitHubs listForRef'

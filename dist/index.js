@@ -30806,8 +30806,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const github_1 = __nccwpck_require__(5438);
 const core_1 = __nccwpck_require__(2186);
+/* eslint camelcase: ["error", {allow: ['^.*run_id$']}] */
 async function setStatus(octokit, status, jobIdentifier, selfId) {
-    /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
     (0, core_1.info)(status);
     if (selfId != null) {
         try {
@@ -30827,6 +30827,19 @@ async function setStatus(octokit, status, jobIdentifier, selfId) {
 function isFlagged(text, flags) {
     return flags.some((flag) => text.includes(`<!--BUGROUP_CHECKS_FLAG-${flag}-->`));
 }
+async function isCheckTriggeredByGithubEvent(octokit, htmlUrl, requiredChecksGithubEvents) {
+    if (requiredChecksGithubEvents.length === 0) {
+        return true;
+    }
+    const match = /^https:\/\/.+\/actions\/runs\/(\d+)\/job\/\d+$/g.exec(htmlUrl ?? '');
+    if (match === null) {
+        (0, core_1.debug)(`Couldn't match run id in ${htmlUrl}`);
+        return false;
+    }
+    const { data: worfklowRun } = await octokit.rest.actions.getWorkflowRun({ ...github_1.context.repo, run_id: parseInt(match[1], 10) });
+    (0, core_1.debug)(`worfklowRun: ${JSON.stringify(worfklowRun)}`);
+    return requiredChecksGithubEvents.some((event) => event.test(worfklowRun.event));
+}
 async function run() {
     try {
         const checkRegexes = (0, core_1.getMultilineInput)('checks').map((check) => RegExp(`^${check}$`));
@@ -30840,6 +30853,9 @@ async function run() {
         const jobIdentifier = (0, core_1.getInput)('jobIdentifier');
         const flags = (0, core_1.getMultilineInput)('flags');
         const requiredChecksMaxCount = parseInt((0, core_1.getInput)('requiredChecksMaxCount'), 10);
+        const requiredChecksGithubEvents = (0, core_1.getMultilineInput)('requiredChecksGithubEvents')
+            .filter((event) => event !== '')
+            .map((event) => RegExp(`^${event}$`));
         let selfId;
         let noNewJobsCounter = 0;
         (0, core_1.setOutput)('allChecks', '[]');
@@ -30862,10 +30878,14 @@ async function run() {
                 }
                 (0, core_1.debug)(`selfId: ${selfId}`);
             }
-            const requiredChecks = refChecks.check_runs.filter((check) => checkRegexes.some((regex) => regex.test(check.name)) &&
+            const requiredChecks = (await Promise.all(refChecks.check_runs
+                .filter((check) => checkRegexes.some((regex) => regex.test(check.name)) &&
                 !excludedCheckRegexes.some((regex) => regex.test(check.name)) &&
                 check.id !== selfId &&
-                !refChecks.check_runs.some((otherCheck) => otherCheck.name === check.name && otherCheck.id > check.id));
+                !refChecks.check_runs.some((otherCheck) => otherCheck.name === check.name && otherCheck.id > check.id))
+                .map(async (check) => ({ value: check, include: await isCheckTriggeredByGithubEvent(octokit, check.html_url, requiredChecksGithubEvents) }))))
+                .filter((check) => check.include)
+                .map((check) => check.value);
             (0, core_1.debug)(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`);
             (0, core_1.setOutput)('requiredChecks', JSON.stringify(requiredChecks));
             const incompleteChecks = requiredChecks.filter((check) => check.status !== 'completed' && !isFlagged(check.output.text ?? '', flags));

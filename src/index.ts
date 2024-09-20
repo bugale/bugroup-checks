@@ -1,8 +1,8 @@
 import { context, getOctokit } from '@actions/github'
 import { getInput, getMultilineInput, debug, info, warning, setFailed, setOutput } from '@actions/core'
+/* eslint camelcase: ["error", {allow: ['^.*run_id$']}] */
 
 async function setStatus(octokit: ReturnType<typeof getOctokit>, status: string, jobIdentifier: string, selfId?: number | null): Promise<void> {
-  /* eslint camelcase: ["error", {allow: ['^check_run_id$']}] */
   info(status)
   if (selfId != null) {
     try {
@@ -23,6 +23,24 @@ function isFlagged(text: string, flags: string[]): boolean {
   return flags.some((flag) => text.includes(`<!--BUGROUP_CHECKS_FLAG-${flag}-->`))
 }
 
+async function isCheckTriggeredByGithubEvent(
+  octokit: ReturnType<typeof getOctokit>,
+  htmlUrl: string | null,
+  requiredChecksGithubEvents: RegExp[]
+): Promise<boolean> {
+  if (requiredChecksGithubEvents.length === 0) {
+    return true
+  }
+  const match = /^https:\/\/.+\/actions\/runs\/(\d+)\/job\/\d+$/g.exec(htmlUrl ?? '')
+  if (match === null) {
+    debug(`Couldn't match run id in ${htmlUrl}`)
+    return false
+  }
+  const { data: worfklowRun } = await octokit.rest.actions.getWorkflowRun({ ...context.repo, run_id: parseInt(match[1], 10) })
+  debug(`worfklowRun: ${JSON.stringify(worfklowRun)}`)
+  return requiredChecksGithubEvents.some((event) => event.test(worfklowRun.event))
+}
+
 export async function run(): Promise<void> {
   try {
     const checkRegexes = getMultilineInput('checks').map((check) => RegExp(`^${check}$`))
@@ -36,6 +54,9 @@ export async function run(): Promise<void> {
     const jobIdentifier = getInput('jobIdentifier')
     const flags = getMultilineInput('flags')
     const requiredChecksMaxCount = parseInt(getInput('requiredChecksMaxCount'), 10)
+    const requiredChecksGithubEvents = getMultilineInput('requiredChecksGithubEvents')
+      .filter((event) => event !== '')
+      .map((event) => RegExp(`^${event}$`))
     let selfId: number | undefined | null
     let noNewJobsCounter = 0
 
@@ -61,13 +82,21 @@ export async function run(): Promise<void> {
         debug(`selfId: ${selfId}`)
       }
 
-      const requiredChecks = refChecks.check_runs.filter(
-        (check) =>
-          checkRegexes.some((regex) => regex.test(check.name)) &&
-          !excludedCheckRegexes.some((regex) => regex.test(check.name)) &&
-          check.id !== selfId &&
-          !refChecks.check_runs.some((otherCheck) => otherCheck.name === check.name && otherCheck.id > check.id)
+      const requiredChecks = (
+        await Promise.all(
+          refChecks.check_runs
+            .filter(
+              (check) =>
+                checkRegexes.some((regex) => regex.test(check.name)) &&
+                !excludedCheckRegexes.some((regex) => regex.test(check.name)) &&
+                check.id !== selfId &&
+                !refChecks.check_runs.some((otherCheck) => otherCheck.name === check.name && otherCheck.id > check.id)
+            )
+            .map(async (check) => ({ value: check, include: await isCheckTriggeredByGithubEvent(octokit, check.html_url, requiredChecksGithubEvents) }))
+        )
       )
+        .filter((check) => check.include)
+        .map((check) => check.value)
       debug(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`)
       setOutput('requiredChecks', JSON.stringify(requiredChecks))
 
