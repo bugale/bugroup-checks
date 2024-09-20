@@ -139,6 +139,9 @@ jobs:
 
 - `requiredChecksMaxCount`: The maximum number of required checks. If this number is found, no waiting for newer jobs will be done. Defaults to 0 (no limit).
 
+- `requiredChecksGithubEvents`: A new-line separated list of RegExes matching Github events, that required checks must have been run for.
+  Defaults to 'pull_request'. Leave empty to avoid checking.
+
 ### Output Parameters
 
 - `allChecks`: A JSON of checks returned by the last call to GitHubs listForRef
