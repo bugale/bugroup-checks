@@ -23,6 +23,26 @@ function isFlagged(text: string, flags: string[]): boolean {
   return flags.some((flag) => text.includes(`<!--BUGROUP_CHECKS_FLAG-${flag}-->`))
 }
 
+function isTransientError(error: unknown): boolean {
+  // Octokit reports network errors (e.g. ECONNRESET) with status 500, so this also covers them
+  const status = (error as { status?: unknown } | null)?.status
+  return typeof status === 'number' && status >= 500
+}
+
+async function withRetries<T>(request: () => Promise<T>, retries: number, interval: number): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await request()
+    } catch (error) {
+      if (attempt > retries || !isTransientError(error)) {
+        throw error
+      }
+      warning(`GitHub API request failed, retrying in ${interval}s (retry ${attempt}/${retries}): ${error instanceof Error ? error.message : String(error)}`)
+      await new Promise((resolve) => setTimeout(resolve, interval * 1000))
+    }
+  }
+}
+
 async function isCheckTriggeredByGithubEvent(
   octokit: ReturnType<typeof getOctokit>,
   htmlUrl: string | null,
@@ -51,6 +71,7 @@ export async function run(): Promise<void> {
     const ref = getInput('ref')
     const delay = parseInt(getInput('delay'), 10)
     const interval = parseInt(getInput('interval'), 10)
+    const retries = parseInt(getInput('retries'), 10)
     const jobIdentifier = getInput('jobIdentifier')
     const flags = getMultilineInput('flags')
     const requiredChecksMaxCount = parseInt(getInput('requiredChecksMaxCount'), 10)
@@ -66,7 +87,7 @@ export async function run(): Promise<void> {
 
     while (true) {
       const octokit = getOctokit(githubToken)
-      const { data: refChecks } = await octokit.rest.checks.listForRef({ ...context.repo, ref })
+      const { data: refChecks } = await withRetries(async () => await octokit.rest.checks.listForRef({ ...context.repo, ref }), retries, interval)
       debug(`refChecks for ${ref}: ${JSON.stringify(refChecks)}`)
       setOutput('allChecks', JSON.stringify(refChecks.check_runs))
 
@@ -92,7 +113,14 @@ export async function run(): Promise<void> {
                 check.id !== selfId &&
                 !refChecks.check_runs.some((otherCheck) => otherCheck.name === check.name && otherCheck.id > check.id)
             )
-            .map(async (check) => ({ value: check, include: await isCheckTriggeredByGithubEvent(octokit, check.html_url, requiredChecksGithubEvents) }))
+            .map(async (check) => ({
+              value: check,
+              include: await withRetries(
+                async () => await isCheckTriggeredByGithubEvent(octokit, check.html_url, requiredChecksGithubEvents),
+                retries,
+                interval
+              )
+            }))
         )
       )
         .filter((check) => check.include)

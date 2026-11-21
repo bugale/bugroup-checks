@@ -31856,6 +31856,25 @@ async function setStatus(octokit, status, jobIdentifier, selfId) {
 function isFlagged(text, flags) {
     return flags.some((flag) => text.includes(`<!--BUGROUP_CHECKS_FLAG-${flag}-->`));
 }
+function isTransientError(error) {
+    // Octokit reports network errors (e.g. ECONNRESET) with status 500, so this also covers them
+    const status = error?.status;
+    return typeof status === 'number' && status >= 500;
+}
+async function withRetries(request, retries, interval) {
+    for (let attempt = 1;; attempt++) {
+        try {
+            return await request();
+        }
+        catch (error) {
+            if (attempt > retries || !isTransientError(error)) {
+                throw error;
+            }
+            (0, core_1.warning)(`GitHub API request failed, retrying in ${interval}s (retry ${attempt}/${retries}): ${error instanceof Error ? error.message : String(error)}`);
+            await new Promise((resolve) => setTimeout(resolve, interval * 1000));
+        }
+    }
+}
 async function isCheckTriggeredByGithubEvent(octokit, htmlUrl, requiredChecksGithubEvents) {
     if (requiredChecksGithubEvents.length === 0) {
         return true;
@@ -31879,6 +31898,7 @@ async function run() {
         const ref = (0, core_1.getInput)('ref');
         const delay = parseInt((0, core_1.getInput)('delay'), 10);
         const interval = parseInt((0, core_1.getInput)('interval'), 10);
+        const retries = parseInt((0, core_1.getInput)('retries'), 10);
         const jobIdentifier = (0, core_1.getInput)('jobIdentifier');
         const flags = (0, core_1.getMultilineInput)('flags');
         const requiredChecksMaxCount = parseInt((0, core_1.getInput)('requiredChecksMaxCount'), 10);
@@ -31892,7 +31912,7 @@ async function run() {
         (0, core_1.setOutput)('unsuccessfulChecks', '[]');
         while (true) {
             const octokit = (0, github_1.getOctokit)(githubToken);
-            const { data: refChecks } = await octokit.rest.checks.listForRef({ ...github_1.context.repo, ref });
+            const { data: refChecks } = await withRetries(async () => await octokit.rest.checks.listForRef({ ...github_1.context.repo, ref }), retries, interval);
             (0, core_1.debug)(`refChecks for ${ref}: ${JSON.stringify(refChecks)}`);
             (0, core_1.setOutput)('allChecks', JSON.stringify(refChecks.check_runs));
             if (selfId === undefined && self !== '') {
@@ -31912,7 +31932,10 @@ async function run() {
                 !excludedCheckRegexes.some((regex) => regex.test(check.name)) &&
                 check.id !== selfId &&
                 !refChecks.check_runs.some((otherCheck) => otherCheck.name === check.name && otherCheck.id > check.id))
-                .map(async (check) => ({ value: check, include: await isCheckTriggeredByGithubEvent(octokit, check.html_url, requiredChecksGithubEvents) }))))
+                .map(async (check) => ({
+                value: check,
+                include: await withRetries(async () => await isCheckTriggeredByGithubEvent(octokit, check.html_url, requiredChecksGithubEvents), retries, interval)
+            }))))
                 .filter((check) => check.include)
                 .map((check) => check.value);
             (0, core_1.debug)(`requiredChecks by ${JSON.stringify(checkRegexes)}-${JSON.stringify(excludedCheckRegexes)}: ${JSON.stringify(requiredChecks)}`);
