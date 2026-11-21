@@ -132,6 +132,9 @@ jobs:
 
 - `interval`: The interval in seconds to wait between checking again. Defaults to 10.
 
+- `retries`: The number of times to retry a GitHub API request that failed with a network or server error (e.g. a connection reset or a 502), waiting
+  `interval` seconds between tries. Defaults to 5.
+
 - `jobIdentifier`: The identifier of the check, which is used to identify the job from the rerun action. Defaults to BUGROUP_CHECKS.
   This is useful in case there's more than one bugroup-checks job for the same git ref.
 

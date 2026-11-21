@@ -35,6 +35,10 @@ inputs:
     description: 'The interval in seconds to wait between checking again'
     default: '10'
     required: false
+  retries:
+    description: 'The number of times to retry a GitHub API request that failed with a network or server error, waiting `interval` seconds between tries'
+    default: '5'
+    required: false
   jobIdentifier:
     description: 'The identifier of the check, which is used to identify the job from the rerun action'
     default: 'BUGROUP_CHECKS'
